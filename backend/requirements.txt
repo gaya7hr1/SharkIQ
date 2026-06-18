@@ -1,0 +1,52 @@
+fastapi>=0.115
+uvicorn[standard]>=0.34
+gunicorn>=23.0
+pydantic>=2.10
+pydantic-settings>=2.7
+sqlalchemy>=2.0
+asyncpg>=0.30
+psycopg2-binary>=2.9
+alembic>=1.14
+python-multipart>=0.0.20
+python-dotenv>=1.0
+
+# AI / LangChain stack
+langchain
+langchain-openai
+langchain-community
+langchain-chroma
+langchain-text-splitters
+langgraph
+langgraph-checkpoint-postgres
+crewai
+crewai-tools
+openai
+
+# Observability / tracing
+langsmith
+
+# Hugging Face Hub (secondary, open-source model signal)
+huggingface_hub
+
+# RAG
+chromadb
+pypdf
+tiktoken
+
+# Reporting
+reportlab
+
+# Observability / utils
+structlog
+tenacity
+httpx
+
+# Auth
+pyjwt
+passlib[bcrypt]
+bcrypt==4.0.1  # passlib 1.7.4 is incompatible with bcrypt>=4.1's removed __about__ API
+
+# Testing
+pytest
+pytest-asyncio
+pytest-cov

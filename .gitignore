@@ -1,0 +1,23 @@
+# Local tool/runtime state
+.claude/
+.run/
+
+# --- Backend (Python) ---
+backend/.venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+backend/.pytest_cache/
+backend/.env
+backend/storage/uploads/*
+backend/storage/chroma/*
+backend/storage/reports/*
+backend/uvicorn.log
+*.log
+
+# --- Frontend (Next.js) ---
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+frontend/tsconfig.tsbuildinfo
+frontend/nextdev.log
