@@ -13,4 +13,4 @@ async def extract_startup(collection_name: str) -> StartupExtracted:
         "revenue model, funding requirement, business stage",
         k=8,
     )
-    return await invoke_with_retry(_chain, {"context": context})
+    return await invoke_with_retry(_chain, {"context": context}, schema=StartupExtracted)

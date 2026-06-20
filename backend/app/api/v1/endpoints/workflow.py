@@ -7,12 +7,14 @@ from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.workflow import HumanApprovalRequest, WorkflowResultRead, WorkflowRunRead
 from app.services.startup_service import get_startup
+from app.schemas.committee import CommitteeChatRequest, CommitteeChatResponse
 from app.services.workflow_service import (
     get_workflow_result,
     get_workflow_run,
     list_workflow_runs,
     resume_workflow,
     start_workflow,
+    chat_with_committee_member,
 )
 
 router = APIRouter(prefix="/workflow", tags=["workflow"])
@@ -57,3 +59,21 @@ async def submit_approval(
     run = await get_workflow_run(db, run_id)
     run = await resume_workflow(db, run, action=payload.action, feedback=payload.feedback)
     return await get_workflow_result(db, run)
+
+
+@router.post("/{run_id}/committee/chat", response_model=CommitteeChatResponse)
+async def chat_committee(
+    run_id: uuid.UUID,
+    payload: CommitteeChatRequest,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    reply = await chat_with_committee_member(
+        db,
+        run_id,
+        investor_type=payload.investor_type,
+        message=payload.message,
+        history=[msg.model_dump() for msg in payload.history],
+    )
+    return CommitteeChatResponse(reply=reply)
+

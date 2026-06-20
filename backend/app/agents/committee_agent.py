@@ -1,17 +1,12 @@
 from app.agents.base import invoke_with_retry, structured_chain
-from app.agents.prompts.unicorn_prompt import UNICORN_PROMPT
-from app.schemas.analysis import (
-    FinancialAnalysis,
-    FounderAnalysis,
-    MarketAnalysis,
-    RiskAnalysis,
-    UnicornPrediction,
-)
+from app.agents.prompts.committee_prompt import COMMITTEE_PROMPT
+from app.schemas.analysis import FinancialAnalysis, FounderAnalysis, MarketAnalysis, RiskAnalysis
+from app.schemas.committee import CommitteeSynthesis
 
-_chain = structured_chain(UNICORN_PROMPT, UnicornPrediction, temperature=0.3)
+_chain = structured_chain(COMMITTEE_PROMPT, CommitteeSynthesis, temperature=0.3)
 
 
-async def predict_unicorn(
+async def run_committee_synthesis(
     *,
     startup_name: str,
     industry: str,
@@ -19,8 +14,8 @@ async def predict_unicorn(
     founder: FounderAnalysis,
     financial: FinancialAnalysis,
     risk: RiskAnalysis,
-) -> UnicornPrediction:
-    prediction = await invoke_with_retry(
+) -> CommitteeSynthesis:
+    return await invoke_with_retry(
         _chain,
         {
             "startup_name": startup_name,
@@ -32,8 +27,8 @@ async def predict_unicorn(
             "market_summary": market.market_opportunity,
             "founder_summary": founder.execution_capability,
             "financial_summary": financial.profitability_potential,
-            "risk_summary": "; ".join(r.description for r in risk.critical_risks) or "No critical risks flagged.",
+            "risk_summary": "; ".join(r.description for r in risk.critical_risks)
+            or "No critical risks flagged.",
         },
+        schema=CommitteeSynthesis,
     )
-    prediction.disclaimer = "AI-generated estimate. Not a financial prediction."
-    return prediction

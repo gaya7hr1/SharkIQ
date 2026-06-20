@@ -13,5 +13,7 @@ async def analyze_market(collection_name: str, startup_name: str, industry: str)
         k=6,
     )
     return await invoke_with_retry(
-        _chain, {"startup_name": startup_name, "industry": industry, "context": context}
+        _chain,
+        {"startup_name": startup_name, "industry": industry, "context": context},
+        schema=MarketAnalysis,
     )

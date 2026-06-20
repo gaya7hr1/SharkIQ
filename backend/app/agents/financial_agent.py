@@ -15,5 +15,7 @@ async def analyze_financial(
         k=6,
     )
     return await invoke_with_retry(
-        _chain, {"startup_name": startup_name, "industry": industry, "context": context}
+        _chain,
+        {"startup_name": startup_name, "industry": industry, "context": context},
+        schema=FinancialAnalysis,
     )

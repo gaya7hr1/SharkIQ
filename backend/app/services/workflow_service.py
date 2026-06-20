@@ -170,6 +170,10 @@ async def _persist_state(db: AsyncSession, run: WorkflowRun, result: dict[str, A
             db.add(Report(workflow_run_id=run.id, file_path=result["report_path"]))
 
     await db.commit()
+    # `updated_at` has a server-side onupdate (func.now()), so the UPDATE above
+    # expires it regardless of expire_on_commit=False; refresh so the response
+    # model can read it without triggering a lazy load outside the async context.
+    await db.refresh(run)
 
 
 async def get_workflow_result(db: AsyncSession, run: WorkflowRun) -> WorkflowResultRead:
@@ -233,3 +237,109 @@ async def get_workflow_result(db: AsyncSession, run: WorkflowRun) -> WorkflowRes
         ),
         pending_approval_payload=pending_payload,
     )
+
+
+INVESTOR_PERSONAS = {
+    "technology": (
+        "TECHNOLOGY INVESTOR — a former CTO turned VC partner who has shipped and scaled three production "
+        "platforms. Cares about highly defensible technology; penalizes startups whose 'innovation' is a thin "
+        "wrapper around someone else's product with no moat."
+    ),
+    "financial": (
+        "FINANCIAL INVESTOR — spent a decade as a public markets analyst before moving into venture. Cares "
+        "about unit economics over growth-at-all-costs narratives; PASSes on a hot story with no credible path to margin."
+    ),
+    "market": (
+        "MARKET INVESTOR — has led go-to-market diligence on over a hundred deals. Distinguishes real customer "
+        "demand from founder optimism; discounts markets already dominated by well-funded incumbents unless there "
+        "is a clear wedge."
+    ),
+    "risk": (
+        "RISK INVESTOR — the committee's designated skeptic, modeled after a risk officer at an institutional "
+        "fund. Has seen deals collapse from regulatory surprises and founder blind spots; votes PASS whenever "
+        "critical risks are unaddressed."
+    ),
+    "growth": (
+        "GROWTH INVESTOR — specializes in growth-stage follow-on rounds and thinks several rounds ahead: "
+        "will this company be fundable at a higher valuation in 18 months? Backs companies with a credible "
+        "compounding trajectory, not just a good quarter."
+    ),
+}
+
+
+async def chat_with_committee_member(
+    db: AsyncSession,
+    run_id: uuid.UUID,
+    *,
+    investor_type: str,
+    message: str,
+    history: list[dict],
+) -> str:
+    # 1. Fetch the workflow run
+    run = await db.get(WorkflowRun, run_id)
+    if not run:
+        raise NotFoundError(f"Workflow run {run_id} not found")
+
+    startup = await db.get(Startup, run.startup_id)
+    if not startup:
+        raise NotFoundError(f"Startup {run.startup_id} not found")
+
+    # 2. Fetch the specific vote from the DB
+    from app.models.committee import CommitteeVote
+    vote_result = await db.execute(
+        select(CommitteeVote).where(
+            CommitteeVote.workflow_run_id == run.id,
+            CommitteeVote.investor_type == investor_type
+        )
+    )
+    vote = vote_result.scalar_one_or_none()
+    vote_details = ""
+    if vote:
+        vote_details = (
+            f"During the simulated investment committee meeting, you voted: {vote.decision}.\n"
+            f"Your recorded reasoning was: {vote.reasoning}\n"
+        )
+        if vote.decision == "INVEST":
+            vote_details += f"Suggested check size: ${vote.suggested_amount:,.2f} for {vote.suggested_equity_pct}% equity.\n"
+
+    # 3. Retrieve grounding context from Chroma DB
+    from app.rag.retriever import retrieve_context
+    context = retrieve_context(startup.chroma_collection, query=message, k=5)
+
+    # 4. Construct System Prompt
+    persona_desc = INVESTOR_PERSONAS.get(investor_type, "Venture Capital Partner")
+
+    system_prompt = (
+        f"You are the following investment committee partner: {persona_desc}\n\n"
+        f"You are discussing the startup '{startup.name}' ({startup.industry or 'Unknown Industry'}) with a VC Associate.\n"
+        f"{vote_details}\n"
+        f"Here is some relevant context retrieved from the startup's pitch deck and documents:\n"
+        f"--- CONTEXT ---\n"
+        f"{context}\n"
+        f"---------------\n\n"
+        f"Guidelines:\n"
+        f"- Stay completely in-character as this specific investor partner type.\n"
+        f"- Ground your answers strictly in the retrieved facts and your recorded committee vote.\n"
+        f"- Be concise, direct, professional, and slightly opinionated, as a partner-level VC investor would be.\n"
+        f"- If the answer cannot be found in the context or database records, state that it is not in the uploaded files, but feel free to explain what you look for as a partner with your specific expertise."
+    )
+
+    # 5. Call LLM
+    from app.agents.base import get_llm
+    from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+
+    messages = [SystemMessage(content=system_prompt)]
+    for msg in history:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        if role in ("user", "human"):
+            messages.append(HumanMessage(content=content))
+        elif role in ("assistant", "ai"):
+            messages.append(AIMessage(content=content))
+
+    messages.append(HumanMessage(content=message))
+
+    llm = get_llm(temperature=0.7)
+    response = await llm.ainvoke(messages)
+    return response.content
+

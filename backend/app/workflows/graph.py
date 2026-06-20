@@ -15,8 +15,7 @@ def build_graph() -> StateGraph:
     graph.add_node("founder_agent", nodes.founder_node)
     graph.add_node("financial_agent", nodes.financial_node)
     graph.add_node("risk_agent", nodes.risk_node)
-    graph.add_node("unicorn_predictor", nodes.unicorn_node)
-    graph.add_node("investment_committee", nodes.committee_node)
+    graph.add_node("committee_synthesis", nodes.committee_synthesis_node)
     graph.add_node("final_recommendation", nodes.final_recommendation_node)
     graph.add_node("human_approval", nodes.human_approval_node)
     graph.add_node("report_generation", nodes.report_generation_node)
@@ -30,14 +29,13 @@ def build_graph() -> StateGraph:
     graph.add_edge("begin_analysis", "financial_agent")
     graph.add_edge("begin_analysis", "risk_agent")
 
-    # Fan-in: unicorn_predictor only runs once all four branches complete.
-    graph.add_edge("market_agent", "unicorn_predictor")
-    graph.add_edge("founder_agent", "unicorn_predictor")
-    graph.add_edge("financial_agent", "unicorn_predictor")
-    graph.add_edge("risk_agent", "unicorn_predictor")
+    # Fan-in: committee_synthesis only runs once all four branches complete.
+    graph.add_edge("market_agent", "committee_synthesis")
+    graph.add_edge("founder_agent", "committee_synthesis")
+    graph.add_edge("financial_agent", "committee_synthesis")
+    graph.add_edge("risk_agent", "committee_synthesis")
 
-    graph.add_edge("unicorn_predictor", "investment_committee")
-    graph.add_edge("investment_committee", "final_recommendation")
+    graph.add_edge("committee_synthesis", "final_recommendation")
     graph.add_edge("final_recommendation", "human_approval")
 
     graph.add_conditional_edges(

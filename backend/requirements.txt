@@ -13,25 +13,30 @@ python-dotenv>=1.0
 # AI / LangChain stack
 langchain
 langchain-openai
+langchain-groq
 langchain-community
 langchain-chroma
 langchain-text-splitters
 langgraph
 langgraph-checkpoint-postgres
-crewai
-crewai-tools
 openai
 
 # Observability / tracing
 langsmith
 
-# Hugging Face Hub (secondary, open-source model signal)
+# Hugging Face Hub (secondary sentiment signal + local embeddings)
 huggingface_hub
+langchain-huggingface
+sentence-transformers
 
 # RAG
 chromadb
 pypdf
 tiktoken
+
+# OCR fallback for scanned/image-only PDFs (no embedded text layer)
+pymupdf
+rapidocr-onnxruntime
 
 # Reporting
 reportlab

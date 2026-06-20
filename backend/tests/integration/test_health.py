@@ -13,7 +13,10 @@ def test_health_check(monkeypatch):
         response = client.get("/api/v1/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    data = response.json()
+    assert data["status"] in ("healthy", "degraded")
+    assert "database" in data
+    assert "chromadb" in data
 
 
 def test_protected_route_requires_auth(monkeypatch):

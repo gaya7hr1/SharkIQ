@@ -1,12 +1,11 @@
 from langgraph.types import interrupt
 
+from app.agents.committee_agent import run_committee_synthesis
 from app.agents.financial_agent import analyze_financial
 from app.agents.founder_agent import analyze_founder
 from app.agents.market_agent import analyze_market
 from app.agents.risk_agent import analyze_risk
 from app.agents.startup_extraction_agent import extract_startup
-from app.agents.unicorn_predictor_agent import predict_unicorn
-from app.committee.crew import run_committee
 from app.core.logging import get_logger
 from app.reports.pdf_generator import generate_report
 from app.schemas.analysis import FinancialAnalysis, FounderAnalysis, MarketAnalysis, RiskAnalysis
@@ -55,8 +54,11 @@ async def risk_node(state: WorkflowState) -> dict:
     return {"risk_analysis": result.model_dump()}
 
 
-async def unicorn_node(state: WorkflowState) -> dict:
-    prediction = await predict_unicorn(
+async def committee_synthesis_node(state: WorkflowState) -> dict:
+    """Single LLM call producing both the committee's 5 investor votes and the
+    unicorn prediction — merged (instead of 6 separate calls) to fit Groq's
+    free-tier rate limits."""
+    synthesis = await run_committee_synthesis(
         startup_name=state["startup_name"],
         industry=state["industry"],
         market=MarketAnalysis.model_validate(state["market_analysis"]),
@@ -64,19 +66,16 @@ async def unicorn_node(state: WorkflowState) -> dict:
         financial=FinancialAnalysis.model_validate(state["financial_analysis"]),
         risk=RiskAnalysis.model_validate(state["risk_analysis"]),
     )
-    return {"unicorn_prediction": prediction.model_dump()}
-
-
-async def committee_node(state: WorkflowState) -> dict:
-    result = await run_committee(
-        startup_name=state["startup_name"],
-        industry=state["industry"],
-        market=MarketAnalysis.model_validate(state["market_analysis"]),
-        founder=FounderAnalysis.model_validate(state["founder_analysis"]),
-        financial=FinancialAnalysis.model_validate(state["financial_analysis"]),
-        risk=RiskAnalysis.model_validate(state["risk_analysis"]),
-    )
-    return {"committee_votes": [v.model_dump() for v in result.votes]}
+    return {
+        "committee_votes": [v.model_dump() for v in synthesis.votes],
+        "unicorn_prediction": {
+            "startup_survival_probability": synthesis.startup_survival_probability,
+            "series_a_funding_probability": synthesis.series_a_funding_probability,
+            "unicorn_probability": synthesis.unicorn_probability,
+            "reasoning": synthesis.unicorn_reasoning,
+            "disclaimer": "AI-generated estimate. Not a financial prediction.",
+        },
+    }
 
 
 async def final_recommendation_node(state: WorkflowState) -> dict:

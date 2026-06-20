@@ -1,13 +1,11 @@
 from functools import lru_cache
 
-from langchain_openai import OpenAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 from app.core.config import settings
 
 
 @lru_cache
-def get_embeddings() -> OpenAIEmbeddings:
-    return OpenAIEmbeddings(
-        model=settings.openai_embedding_model,
-        api_key=settings.openai_api_key,
-    )
+def get_embeddings() -> HuggingFaceEmbeddings:
+    """Local sentence-transformers embeddings - runs on CPU, no API key or quota."""
+    return HuggingFaceEmbeddings(model_name=settings.hf_embedding_model)

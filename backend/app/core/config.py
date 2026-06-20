@@ -19,6 +19,20 @@ class Settings(BaseSettings):
     openai_chat_model: str = "gpt-4o"
     openai_embedding_model: str = "text-embedding-3-small"
 
+    # --- Groq (chat model provider; swapped in to avoid OpenAI quota limits) ---
+    groq_api_key: str = ""
+    groq_chat_model: str = "llama-3.1-8b-instant"
+    # Minimum seconds between outbound Groq calls, shared by every LangChain agent call
+    # in the workflow (6 per run). Confirmed empirically (from real 429 bodies) that on
+    # this account llama-3.1-8b-instant is capped at 6000 TPM — *lower* than
+    # llama-3.3-70b-versatile's 12000 TPM, despite being the smaller model. At ~1500-1700
+    # tokens/call that's a sustainable rate of ~1 call every 16-17s; 16.0 leaves a small
+    # margin. Re-tune if you change models or Groq adjusts your account's limits.
+    groq_min_request_interval_seconds: float = 16.0
+
+    # --- Local embeddings (Hugging Face sentence-transformers, runs on CPU, no API key/quota) ---
+    hf_embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+
     chroma_persist_dir: str = "./storage/chroma"
     chroma_host: str = ""
     chroma_port: str = ""

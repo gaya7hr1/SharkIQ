@@ -88,5 +88,5 @@ def build_reasoning(
         f"recommendation. Component scores — Market: {market.score}/100, Founder: {founder.score}/100, "
         f"Financial: {financial.score}/100, Risk (higher=safer): {risk.score}/100. "
         f"The investment committee voted {committee.invest_count} INVEST / {committee.pass_count} PASS "
-        f"across the five investor perspectives. Top risk factors: {risk_summary}."
+        f"across {len(committee.votes)} investor perspectives. Top risk factors: {risk_summary}."
     )

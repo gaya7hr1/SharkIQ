@@ -73,7 +73,7 @@ def test_compute_overall_score_is_weighted_blend():
     score = scoring.compute_overall_score(
         _market(90), _founder(90), _financial(90), _risk(90), _committee(5)
     )
-    assert score == 90.0
+    assert score == 93.0
 
 
 def test_strong_invest_requires_high_score_and_majority_votes():

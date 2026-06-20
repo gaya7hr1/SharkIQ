@@ -16,7 +16,9 @@ async def analyze_founder(collection_name: str, startup_name: str, industry: str
         k=6,
     )
     result = await invoke_with_retry(
-        _chain, {"startup_name": startup_name, "industry": industry, "context": context}
+        _chain,
+        {"startup_name": startup_name, "industry": industry, "context": context},
+        schema=FounderAnalysis,
     )
 
     # Independent cross-check signal from a Hugging Face Hub model, scored on the

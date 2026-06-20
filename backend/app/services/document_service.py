@@ -49,6 +49,12 @@ async def process_document(
             doc_id=str(document.id),
             doc_type=document.doc_type.value,
         )
+        if not chunks:
+            raise DocumentProcessingError(
+                f"No extractable text found in '{document.filename}'. "
+                "It looks like a scanned/image-based PDF with no text layer — "
+                "re-export it with selectable text or run it through OCR before uploading."
+            )
         add_chunks(chroma_collection, chunks)
 
         document.status = DocumentStatus.INDEXED
