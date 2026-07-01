@@ -1,5 +1,7 @@
 # SharkIQ
+
 🌐 Live Demo: https://shark-iq.vercel.app/
+
 **AI Venture Capital Intelligence Platform** — upload a startup's pitch deck and supporting documents, and a multi-agent system runs due diligence, simulates an investor committee vote, and produces a scored investment recommendation with a human approval gate and a downloadable PDF report.
 
 ## What it does
